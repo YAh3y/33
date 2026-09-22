@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en" manifest="cache.appcache">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>مكتب يحيى للإلكترونيات | PS4</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;font-family:Tahoma,Arial,sans-serif;color:#eef2f7}
+body{overflow:hidden;background:radial-gradient(circle at 20% 10%,rgba(0,170,255,.14),transparent 30%),radial-gradient(circle at 85% 20%,rgba(125,60,255,.13),transparent 30%),linear-gradient(145deg,#05070a,#0a0e15 52%,#06080c)}
+.wrap{height:100%;display:flex;align-items:center;justify-content:center;padding:20px}
+.panel{width:860px;max-width:94%;background:rgba(10,14,20,.92);border:1px solid rgba(255,255,255,.09);border-radius:22px;padding:28px;text-align:center;box-shadow:0 18px 50px rgba(0,0,0,.3)}
+.brand{font-size:34px;font-weight:900}
+.sub{color:#8994a4;margin:8px 0 18px}
+.ver{display:inline-block;padding:7px 14px;border-radius:9px;background:#0a1018;border:1px solid #1a2533;color:#b9c3cf;margin-bottom:16px}
+#msgs{display:block;font-size:18px;font-weight:700;margin:8px 0;color:#eef2f7}
+.status-text.success{color:#7fd0a0}.status-text.error{color:#d08a7f}
+.foot{color:#657181;font-size:12px;margin-top:16px}
+#runBtn{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap"><main class="panel">
+  <div class="brand">مكتب يحيى للإلكترونيات</div>
+  <div class="sub">PS4 11.00 - 13.00 • أوفلاين • سريع وخفيف</div>
+  <div class="ver">Automatic Firmware Detection</div>
+  <span id="msgs" class="status-text">جاري التعرف على الفيرجن والتشغيل تلقائياً...</span>
+  <button id="runBtn" type="button">Run</button>
+  <div class="foot">جميع الحقوق محفوظة © مكتب يحيى للإلكترونيات • 07732954749</div>
+</main></div>
+<script>
+    var msgs = document.getElementById('msgs');
+    var runBtn = document.getElementById('runBtn');
+
+    function updateStatus(msg, cls) {
+        msgs.innerHTML = msg;
+        msgs.className = 'status-text' + (cls ? ' ' + cls : '');
+    }
+
+    // ========== كشف الفيرموير ==========
+    var uaFull = navigator.userAgent;
+    var match = uaFull.match(/PlayStation 4[ \/](\d+)\.(\d+)/i);
+    var isPS4 = match !== null;
+    var fwVersion = isPS4 ? match[1] + "." + match[2] : "Unknown";
+    var fwNum = 0;
+    var key = null;
+    var bug = null;
+
+    if (match) {
+        key = match[1] + "." + match[2];
+        fwNum = parseInt(match[1], 10) * 100 + parseInt(match[2], 10);
+    }
+
+    if (isPS4) {
+        if (fwNum <= 1202) {
+            bug = "lapse";
+        } else if (fwNum >= 1250) {
+            bug = "poops";
+        }
+    }
+
+    // ========== توجيه مستقر ==========
+    // بدون query string: عنوان الصفحة الهدف يطابق عنوان الكاش بالضبط،
+    // فيعمل التوجيه دون اتصال. كان ?bug=lapse سابقاً يكسر التطابق.
+    var redirected = false;
+    var reloadedOnce = false;
+    var RELOAD_KEY = 'ps4host_reloaded_v1';
+
+    function redirectToRun() {
+        if (redirected || !isPS4 || !bug) return;
+        redirected = true;
+        var target = bug === 'lapse' ? 'run_lapse.html' : 'run_poops.html';
+        updateStatus('🚀 Loading ' + (bug === 'lapse' ? 'Lapse' : 'Poops') + ' exploit...');
+        window.location.replace(target);
+    }
+
+    // ========== الكاش (AppCache) ==========
+    // سلوك الاستقرار (يقلّل التحمد في المحاولة الأولى):
+    //  - كاش دافئ (noupdate): بدء تلقائي -- هذه هي الحالة المستقرة.
+    //  - كاش بارد (تثبيت أول): لا بدء تلقائي أبداً، نعرض زر ▶ Run now
+    //    حتى لا تتنافس السلسلة مع تنزيل الكاش على ذاكرة WebKit.
+    //  - خطأ كاش: زر فقط (تشغيل عبر الشبكة) -- لا بدء تلقائي.
+    var cacheState = 'unknown';
+    var SAFETY_MS = 2500;
+
+    function showRunButton() {
+        runBtn.style.display = 'none';
+    }
+
+    var appCache = window.applicationCache;
+    if (appCache) {
+        appCache.addEventListener('checking', function() {
+            updateStatus('⏳ Checking cache...');
+        }, false);
+        appCache.addEventListener('downloading', function() {
+            updateStatus('📥 Installing cache (first visit)...');
+        }, false);
+        appCache.addEventListener('progress', function(e) {
+            if (e && e.total) {
+                var pct = Math.round((e.loaded / e.total) * 100);
+                updateStatus('📥 Caching ' + pct + '%...');
+            }
+        }, false);
+        appCache.addEventListener('cached', function() {
+            cacheState = 'cold';
+            updateStatus('✅ Cache installed -- starting...', 'success');
+            setTimeout(redirectToRun, 250);
+        }, false);
+        appCache.addEventListener('noupdate', function() {
+            cacheState = 'warm';
+            updateStatus('✅ Cache ready -- starting...', 'success');
+            // مهلة قصيرة حتى يستقر WebKit ثم نبدأ
+            setTimeout(redirectToRun, 250);
+        }, false);
+        appCache.addEventListener('updateready', function() {
+            try { appCache.swapCache(); } catch (e) {}
+            // إعادة تحميل واحدة فقط عند التحديث، ثم نكمل من الكاش الجديد
+            if (!reloadedOnce) {
+                reloadedOnce = true;
+                try { sessionStorage.setItem(RELOAD_KEY, '1'); } catch (e) {}
+                updateStatus('🔄 Update ready -- reloading once...');
+                setTimeout(function() { location.reload(); }, 300);
+            } else {
+                cacheState = 'warm';
+                updateStatus('✅ Cache updated -- starting...', 'success');
+                setTimeout(redirectToRun, 250);
+            }
+        }, false);
+        appCache.addEventListener('error', function() {
+            // الكاش فشل (لا اتصال أو الخادم مشغول) -- تشغيل عبر الشبكة بيد المستخدم
+            cacheState = 'error';
+            updateStatus('⚠️ Cache unavailable -- starting in network mode...');
+            setTimeout(redirectToRun, 250);
+        }, false);
+        appCache.addEventListener('obsolete', function() {
+            cacheState = 'error';
+            updateStatus('⚠️ Cache obsolete -- starting...');
+            setTimeout(redirectToRun, 250);
+        }, false);
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        // تمييز كارت الفيرموير المكتشف
+        if (key) {
+            var cards = document.querySelectorAll('.fw-card');
+            for (var i = 0; i < cards.length; i++) {
+                if (cards[i].getAttribute('data-fw') === key) {
+                    cards[i].className += ' active';
+                }
+            }
+        }
+
+        if (!isPS4) {
+            updateStatus('⚠️ This page is for PS4 only!', 'error');
+            return;
+        }
+
+        if (!bug) {
+            updateStatus('❌ Unsupported Firmware: ' + fwVersion, 'error');
+            return;
+        }
+
+        updateStatus('✅ Detected PS4 Firmware: ' + fwVersion
+            + ' (' + (bug === 'lapse' ? 'Lapse' : 'Poops') + ' chain)');
+
+        // زر تشغيل يدوي متاح دائماً
+        runBtn.style.display = 'none';
+        // automatic mode: no manual button required
+
+        // إن لم يوجد AppCache أصلاً نبدأ مباشرة (وضع شبكة)
+        if (!appCache) {
+            setTimeout(redirectToRun, 200);
+            return;
+        }
+
+        // شبكة أمان: مع كاش بارد/خاطئ لا نبدأ تلقائياً أبداً،
+        // فقط نؤكد ظهور الزر بعد 30 ثانية كحد أقصى
+        setTimeout(function() {
+            if (!redirected) {
+                updateStatus('⏳ Cache is slow -- starting automatically...');
+                redirectToRun();
+            }
+        }, SAFETY_MS);
+    });
+</script>
+</body>
+</html>

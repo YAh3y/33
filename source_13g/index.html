@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en" manifest="cache.appcache">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>مكتب يحيى للإلكترونيات | PS4</title>
+
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;font-family:Tahoma,Arial,sans-serif;color:#eef2f7}
+body{overflow:hidden;background:radial-gradient(circle at 20% 10%,rgba(0,170,255,.14),transparent 30%),radial-gradient(circle at 85% 20%,rgba(125,60,255,.13),transparent 30%),linear-gradient(145deg,#05070a,#0a0e15 52%,#06080c)}
+.wrap{height:100%;display:flex;align-items:center;justify-content:center;padding:20px}
+.panel{width:860px;max-width:94%;background:rgba(10,14,20,.92);border:1px solid rgba(255,255,255,.09);border-radius:22px;padding:28px;text-align:center;box-shadow:0 18px 50px rgba(0,0,0,.3)}
+.brand{font-size:34px;font-weight:900}
+.sub{color:#8994a4;margin:8px 0 18px}
+.ver{display:inline-block;padding:7px 14px;border-radius:9px;background:#0a1018;border:1px solid #1a2533;color:#b9c3cf;margin-bottom:16px}
+#state{font-size:20px;font-weight:700;margin:8px 0;color:#eef2f7}
+#det{font-size:13px;color:#8994a4;margin:7px 0}
+#cache{font-size:12px;color:#657181;min-height:18px}
+#cache.cacheok,.ok{color:#7fd0a0}.bad{color:#d08a7f}.warn{color:#d8c07f}
+.foot{color:#657181;font-size:12px;margin-top:16px}
+</style>
+</head>
+<body>
+<div class="wrap"><main class="panel">
+  <div class="brand">مكتب يحيى للإلكترونيات</div>
+  <div class="sub">PS4 13.52 • أوفلاين • سريع وخفيف</div>
+  <div class="ver">Firmware 13.52</div>
+  <div id="state">جاري التعرف على الفيرجن والتشغيل تلقائياً...</div>
+  <div id="det"></div>
+  <div id="cache"></div>
+  <div class="foot">جميع الحقوق محفوظة © مكتب يحيى للإلكترونيات • 07732954749</div>
+</main></div>
+<script>
+(function () {
+    var stateEl = document.getElementById("state");
+    var detEl = document.getElementById("det");
+    var cacheEl = document.getElementById("cache");
+    function setState(t, c) { stateEl.textContent = t; stateEl.className = c || ""; }
+    function setCache(t, ok) { cacheEl.textContent = t; cacheEl.className = ok ? "cacheok" : ""; }
+    var params = new URLSearchParams(location.search);
+
+    // Firmwares this build has a MEASURED kernel table for. jb.js still runs its
+    // own kernel-table-present gate, so this is UX only -- an unlisted firmware
+    // can still be launched with a tap. KEEP IN SYNC with ps4_offsets.js: add a
+    // fwnum here in the SAME commit that fills that firmware's kernel RVAs.
+    // The PS4 reports its minor as two hex digits in the UA (13.52 -> minor 0x52).
+    var SUPPORTED = { 1302: 1, 1304: 1, 1350: 1, 1352: 1 }; // all measured on hardware
+
+    var key = null, fwnum = null;
+    var m = /PlayStation\s+4[\/ ](\d+)\.(\d+)/.exec(navigator.userAgent);
+    if (m) {
+        var ms = parseInt(m[2], 16).toString(16);
+        if (ms.length < 2) ms = "0" + ms;
+        key = m[1] + "." + ms;
+        fwnum = parseInt(m[1], 10) * 100 + parseInt(ms, 10);
+    }
+
+    var forced = params.get("force") === "1";
+    var supported = forced || (fwnum !== null && SUPPORTED[fwnum] === 1);
+    detEl.innerHTML = "firmware <b>" + (key || "unknown") + "</b>"
+        + (supported ? " &middot; <b>supported</b>"
+                     : " &middot; not in this build's kernel table");
+
+    var target = "jb.html" + location.search;
+    function go() { setState("loading jailbreak...", "warn"); location.replace(target); }
+    // it, so a user-agent quirk on the real 13.52 console can never lock it out.
+    if (!supported) {
+        setState("UNSUPPORTED FIRMWARE", "bad");
+        setCache("هذا الإصدار غير موجود ضمن جدول الدعم");
+        return;
+    }
+
+    var ac = window.applicationCache;
+    if (!ac || !document.documentElement.hasAttribute("manifest")) {
+        go();
+    } else if (!navigator.onLine) {
+        setCache("offline -- from cache", true);
+        go();
+    } else if (ac.status === ac.IDLE) {
+        setCache("cached", true);
+        go();
+    } else if (ac.status === ac.UPDATEREADY) {
+        try { ac.swapCache(); } catch (e) {}
+        setCache("update downloaded", true);
+        setState("UPDATE READY -- reloading automatically...", "warn");
+        setTimeout(function () { location.reload(); }, 400);
+    } else {
+        setCache("checking cache...");
+        ac.addEventListener("downloading",
+            function () { setCache("caching for offline (first run)..."); }, false);
+        ac.addEventListener("progress", function (e) {
+            if (e && e.total)
+                setCache("caching " + Math.round((e.loaded / e.total) * 100) + "%");
+        }, false);
+        ac.addEventListener("cached", function () {
+            setCache("cached for offline use", true);
+            setState("CACHED -- starting automatically...", "ok");
+            setTimeout(go, 700);
+        }, false);
+        ac.addEventListener("updateready", function () {
+            try { ac.swapCache(); } catch (e) {}
+            setCache("update downloaded", true);
+            setState("UPDATE READY -- reloading automatically...", "warn");
+            setTimeout(function () { location.reload(); }, 400);
+        }, false);
+        ac.addEventListener("noupdate", function () {
+            setCache("cached -- offline ready", true);
+            go();
+        }, false);
+        ac.addEventListener("error", function () {
+            setCache("cache unavailable");
+            setState("CACHE FAILED -- starting automatically...", "warn");
+            setTimeout(go, 700);
+        }, false);
+        ac.addEventListener("obsolete", function () {
+            setCache("cache obsolete");
+            setState("CACHE OBSOLETE -- starting automatically...", "warn");
+            setTimeout(go, 700);
+        }, false);
+    }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,27 @@
+CACHE MANIFEST
+# YahayOffice 13.52 cache repair 2026-09-22-r1
+
+CACHE:
+index.html
+jb.html
+jb.js
+core.js
+mem.js
+int64.js
+ps4_offsets.js
+rpc_worker.js
+payload2.bin
+goldhen.bin
+logo_raw.png
+patches/1302.bin
+patches/1350.bin
+patches/1352.bin
+core.js?v=10
+jb.js?v=10
+
+NETWORK:
+*
+
+FALLBACK:
+index.html index.html
+jb.html jb.html

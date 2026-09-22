@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" manifest="cache.appcache">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>مكتب يحيى للإلكترونيات | PS4</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;font-family:Tahoma,Arial,sans-serif;color:#eef2f7}body{overflow:hidden;background:radial-gradient(circle at 20% 10%,rgba(0,170,255,.14),transparent 30%),radial-gradient(circle at 85% 20%,rgba(125,60,255,.13),transparent 30%),linear-gradient(145deg,#05070a,#0a0e15 52%,#06080c)}.wrap{height:100%;display:flex;align-items:center;justify-content:center;padding:20px}.panel{width:860px;max-width:94%;background:rgba(10,14,20,.92);border:1px solid rgba(255,255,255,.09);border-radius:22px;padding:28px;text-align:center;box-shadow:0 18px 50px rgba(0,0,0,.3)}.brand{font-size:34px;font-weight:900}.sub{color:#8994a4;margin:8px 0 18px}.ver{display:inline-block;padding:7px 14px;border-radius:9px;background:#0a1018;border:1px solid #1a2533;color:#b9c3cf;margin-bottom:16px}#state{font-size:20px;font-weight:700;margin:8px 0;color:#eef2f7}#det{font-size:13px;color:#8994a4;margin:7px 0}#cache{font-size:12px;color:#657181;min-height:18px}#cache.cacheok,.ok{color:#7fd0a0}.bad{color:#d08a7f}.warn{color:#d8c07f}.foot{color:#657181;font-size:12px;margin-top:16px}
+</style></head><body><div class="wrap"><main class="panel"><div class="brand">مكتب يحيى للإلكترونيات</div><div class="sub">PS4 5.05 → 13.52 • أوفلاين • سريع وخفيف</div><div class="ver" id="ver">Firmware AUTO</div><div id="state">جاري التعرف على الفيرجن والتشغيل تلقائياً...</div><div id="det"></div><div id="cache"></div><div class="foot">جميع الحقوق محفوظة © مكتب يحيى للإلكترونيات • 07732954749</div></main></div>
+<script>(function(){var st=document.getElementById('state'),det=document.getElementById('det'),ver=document.getElementById('ver'),cache=document.getElementById('cache');var m=/PlayStation\s+4[\/ ](\d+)\.(\d+)/i.exec(navigator.userAgent);if(!m){st.textContent='افتح الصفحة من متصفح PS4';det.textContent='سيتم التعرف على النظام تلقائياً';return}var maj=parseInt(m[1],10),min=parseInt(m[2],10),v=maj*100+min,t=null,vs=m[1]+'.'+m[2];ver.textContent='Firmware '+vs;det.innerHTML='firmware <b>'+vs+'</b> · <b>auto detect</b>';if(v===505)t='fw505/index.html';else if(v===672)t='fw672/index.html';else if((v>=700&&v<=755)||(v>=800&&v<=852))t='fw7x8x/index.html';else if(v===900)t='fw900/index.html';else if([1100,1150,1200,1202,1250].indexOf(v)>=0)t='source_113/index.html';else if([1300,1302,1304,1350,1352].indexOf(v)>=0)t='source_13g/index.html';if(!t){st.textContent='هذا الإصدار غير موجود ضمن الملفات الحالية';st.className='bad';return}function go(){st.textContent='loading jailbreak...';st.className='warn';setTimeout(function(){location.replace(t)},250)}var ac=window.applicationCache;
+function ready(msg){cache.textContent=msg;cache.className='cacheok';go()}
+if(!ac||!document.documentElement.hasAttribute('manifest')){cache.textContent='cache API unavailable';go()}
+else if(!navigator.onLine){ready('offline -- ready from cache')}
+else if(ac.status===ac.IDLE){ready('offline cache ready')}
+else if(ac.status===ac.UPDATEREADY){try{ac.swapCache()}catch(e){}ready('offline cache updated')}
+else{
+ cache.textContent='جاري حفظ ملفات الأوفلاين... لا تغلق الصفحة';
+ ac.addEventListener('downloading',function(){cache.textContent='جاري حفظ ملفات الأوفلاين...'},false);
+ ac.addEventListener('progress',function(e){if(e&&e.total)cache.textContent='حفظ الأوفلاين '+Math.round(e.loaded/e.total*100)+'%'},false);
+ ac.addEventListener('cached',function(){ready('تم حفظ الأوفلاين 100%')},false);
+ ac.addEventListener('noupdate',function(){ready('offline cache ready')},false);
+ ac.addEventListener('updateready',function(){try{ac.swapCache()}catch(e){}ready('offline cache updated')},false);
+ ac.addEventListener('error',function(){cache.textContent='تعذر إكمال الكاش — أبقِ الإنترنت شغال وأعد فتح الصفحة';cache.className='bad';st.textContent='CACHE ERROR';st.className='bad'},false)
+}})();</script></body></html>
